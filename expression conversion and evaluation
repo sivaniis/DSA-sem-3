@@ -1,0 +1,147 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+#define SIZE 100
+
+char stack[SIZE];
+int top = -1;
+
+void push(char c) {
+    stack[++top] = c;
+}
+
+char pop() {
+    return stack[top--];
+}
+
+char peek() {
+    return stack[top];
+}
+
+int isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/';
+}
+
+int precedence(char c) {
+    switch (c) {
+        case '+': case '-': return 1;
+        case '*': case '/': return 2;
+    }
+    return 0;
+}
+
+int isOperand(char c) {
+    return isalnum(c);
+}
+
+void reverse(char* exp) {
+    int i, j;
+    char temp;
+    for (i = 0, j = strlen(exp)-1; i < j; i++, j--) {
+        temp = exp[i];
+        exp[i] = exp[j];
+        exp[j] = temp;
+    }
+}
+
+void infixToPostfix(char* infix, char* postfix) {
+    int i, j = 0;
+    char ch;
+    for (i = 0; infix[i]; i++) {
+        ch = infix[i];
+        if (isOperand(ch)) {
+            postfix[j++] = ch;
+        } else if (ch == '(') {
+            push(ch);
+        } else if (ch == ')') {
+            while (top != -1 && peek() != '(') {
+                postfix[j++] = pop();
+            }
+            pop(); 
+        } else if (isOperator(ch)) {
+            while (top != -1 && precedence(peek()) >= precedence(ch)) {
+                postfix[j++] = pop();
+            }
+            push(ch);
+        }
+    }
+    while (top != -1) {
+        postfix[j++] = pop();
+    }
+    postfix[j] = '\0';
+}
+
+void infixToPrefix(char* infix, char* prefix) {
+    char rev[SIZE], postfix[SIZE];
+    strcpy(rev, infix);
+    reverse(rev);
+    for (int i = 0; rev[i]; i++) {
+        if (rev[i] == '(') rev[i] = ')';
+        else if (rev[i] == ')') rev[i] = '(';
+    }
+    top = -1;
+    infixToPostfix(rev, postfix);
+    reverse(postfix);
+    strcpy(prefix, postfix);
+}
+
+int evalPostfix(char* postfix) {
+    int stack[SIZE], top = -1, i, op1, op2;
+    for (i = 0; postfix[i]; i++) {
+        if (isdigit(postfix[i])) {
+            stack[++top] = postfix[i] - '0';
+        } else {
+            op2 = stack[top--];
+            op1 = stack[top--];
+            switch (postfix[i]) {
+                case '+': stack[++top] = op1 + op2; break;
+                case '-': stack[++top] = op1 - op2; break;
+                case '*': stack[++top] = op1 * op2; break;
+                case '/': stack[++top] = op1 / op2; break;
+            }
+        }
+    }
+    return stack[top];
+}
+
+int evalPrefix(char* prefix) {
+    int stack[SIZE], top = -1, i, op1, op2;
+    for (i = strlen(prefix) - 1; i >= 0; i--) {
+        if (isdigit(prefix[i])) {
+            stack[++top] = prefix[i] - '0';
+        } else {
+            op1 = stack[top--];
+            op2 = stack[top--];
+            switch (prefix[i]) {
+                case '+': stack[++top] = op1 + op2; break;
+                case '-': stack[++top] = op1 - op2; break;
+                case '*': stack[++top] = op1 * op2; break;
+                case '/': stack[++top] = op1 / op2; break;
+            }
+        }
+    }
+    return stack[top];
+}
+
+int main() {
+    char infix[SIZE], postfix[SIZE], prefix[SIZE];
+    printf("Enter Infix Expression: ");
+    scanf("%s", infix);
+
+    infixToPostfix(infix, postfix);
+    infixToPrefix(infix, prefix);
+
+    printf("Postfix: %s\n", postfix);
+    printf("Prefix: %s\n", prefix);
+
+    if (isdigit(infix[0])) {
+        printf("Postfix Evaluation: %d\n", evalPostfix(postfix));
+        printf("Prefix Evaluation: %d\n", evalPrefix(prefix));
+    } else {
+        printf("Cannot evaluate (expression contains variables).\n");
+    }
+
+    return 0;
+}
